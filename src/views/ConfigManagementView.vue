@@ -101,7 +101,7 @@ async function handleDeleteConfig() {
                 当前激活
               </n-tag>
               <n-text strong>{{ config.name }}</n-text>
-              <n-text depth="3">全局 IP: {{ config.global_ip }}</n-text>
+              <n-text depth="3">全局地址: {{ config.global_ip }}</n-text>
               <n-text depth="3">
                 端口: {{ config.enabled_count }}/{{ config.port_count }} 启用
               </n-text>

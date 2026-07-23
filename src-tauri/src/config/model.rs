@@ -43,6 +43,22 @@ pub struct ConfigMeta {
     pub enabled_count: usize,
 }
 
+/// 校验地址是否合法（IPv4 / IPv6 / 域名）
+fn is_valid_host(host: &str) -> bool {
+    // 尝试 IPv4
+    if host.parse::<std::net::Ipv4Addr>().is_ok() {
+        return true;
+    }
+    // 尝试 IPv6
+    if host.parse::<std::net::Ipv6Addr>().is_ok() {
+        return true;
+    }
+    // 域名：仅校验基本格式（非空、不含空格和非法字符）
+    !host.is_empty()
+        && host.len() <= 255
+        && !host.contains(|c: char| c.is_whitespace() || c == '/' || c == '\\' || c == ':')
+}
+
 impl ProxyConfig {
     /// 校验配置有效性
     pub fn validate(&self) -> Result<(), String> {
@@ -54,13 +70,13 @@ impl ProxyConfig {
             return Err("配置名称不能包含 / \\ : 等特殊字符".into());
         }
 
-        // 校验全局 IP
+        // 校验全局 IP / 域名
         let trimmed_ip = self.global_ip.trim();
         if trimmed_ip.is_empty() {
             return Err("全局默认 IP 不能为空".into());
         }
-        if trimmed_ip.parse::<std::net::Ipv4Addr>().is_err() {
-            return Err(format!("全局 IP '{}' 不是有效的 IPv4 地址", trimmed_ip));
+        if !is_valid_host(trimmed_ip) {
+            return Err(format!("全局地址 '{}' 不是有效的 IP（v4/v6）或域名", trimmed_ip));
         }
 
         // 校验端口规则
@@ -76,11 +92,11 @@ impl ProxyConfig {
                 return Err(format!("端口 {} 重复", port.local_port));
             }
 
-            // 校验目标 IP 格式（如果提供）
-            if let Some(ref ip) = port.target_ip {
-                let ip = ip.trim();
-                if !ip.is_empty() && ip.parse::<std::net::Ipv4Addr>().is_err() {
-                    return Err(format!("端口 {} 的目标 IP '{}' 不是有效的 IPv4 地址", port.local_port, ip));
+            // 校验目标 IP / 域名（如果提供）
+            if let Some(ref host) = port.target_ip {
+                let host = host.trim();
+                if !host.is_empty() && !is_valid_host(host) {
+                    return Err(format!("端口 {} 的目标地址 '{}' 不是有效的 IP（v4/v6）或域名", port.local_port, host));
                 }
             }
 
@@ -172,10 +188,29 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_invalid_ip() {
+    fn test_validate_valid_ipv6_and_domain() {
+        // IPv6 地址
+        let config1 = ProxyConfig {
+            name: "测试".into(),
+            global_ip: "::1".into(),
+            ports: vec![],
+        };
+        assert!(config1.validate().is_ok());
+
+        // 域名
+        let config2 = ProxyConfig {
+            name: "测试".into(),
+            global_ip: "db.example.com".into(),
+            ports: vec![],
+        };
+        assert!(config2.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_invalid_host_with_space() {
         let config = ProxyConfig {
             name: "测试".into(),
-            global_ip: "not-an-ip".into(),
+            global_ip: "192.168.1 .1".into(),
             ports: vec![],
         };
         assert!(config.validate().is_err());

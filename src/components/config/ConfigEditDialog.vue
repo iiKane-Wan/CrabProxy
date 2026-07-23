@@ -37,12 +37,15 @@ watch(
 const rules = {
   name: [{ required: true, message: '请输入配置名称', trigger: 'blur' }],
   global_ip: [
-    { required: true, message: '请输入全局 IP', trigger: 'blur' },
+    { required: true, message: '请输入全局 IP / 域名', trigger: 'blur' },
     {
       validator(_rule: unknown, value: string) {
-        return /^(\d{1,3}\.){3}\d{1,3}$/.test(value.trim())
+        const v = value.trim()
+        if (!v) return false
+        // 允许 IPv4、IPv6、域名；仅禁止空白字符
+        return !/\s/.test(v)
       },
-      message: 'IP 地址格式不正确',
+      message: '地址格式不正确，不能包含空格',
       trigger: 'blur',
     },
   ],
@@ -82,8 +85,8 @@ function handleSave() {
           :disabled="isEditing"
         />
       </n-form-item>
-      <n-form-item label="全局 IP" path="global_ip">
-        <n-input v-model:value="formData.global_ip" placeholder="例如 192.168.1.100" />
+      <n-form-item label="全局地址" path="global_ip">
+        <n-input v-model:value="formData.global_ip" placeholder="IPv4 / IPv6 / 域名，例如 192.168.1.100" />
       </n-form-item>
     </n-form>
     <template #footer>

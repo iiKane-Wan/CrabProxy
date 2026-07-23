@@ -76,10 +76,10 @@ const rules = {
     {
       validator(_rule: unknown, value: string) {
         if (!value || value.trim() === '') return true // 可选
-        const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/
-        return ipRegex.test(value.trim())
+        // 允许 IPv4、IPv6、域名；仅禁止空白字符
+        return !/\s/.test(value.trim())
       },
-      message: 'IP 地址格式不正确',
+      message: '地址格式不正确，不能包含空格',
       trigger: 'blur',
     },
   ],
@@ -143,10 +143,10 @@ watch(visible, (val) => {
         />
       </n-form-item>
 
-      <n-form-item label="目标 IP" path="target_ip">
+      <n-form-item label="目标地址" path="target_ip">
         <n-input
           v-model:value="formData.target_ip"
-          :placeholder="`留空则使用全局 IP（${props.globalIp || '未设置'}）`"
+          :placeholder="`IPv4/IPv6/域名，留空则使用全局地址（${props.globalIp || '未设置'}）`"
         />
       </n-form-item>
 
