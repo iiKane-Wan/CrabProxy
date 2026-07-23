@@ -44,11 +44,12 @@ function renderIcon(icon: Component) {
     :native-scrollbar="false"
     style="background: var(--n-color-embedded)"
   >
-    <!-- Logo 区域 -->
+    <!-- Logo 区域（水平垂直居中） -->
     <div
       style="
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 10px;
         padding: 20px 18px;
         border-bottom: 1px solid var(--n-border-color);
