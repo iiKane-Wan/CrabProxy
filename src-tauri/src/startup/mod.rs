@@ -10,6 +10,7 @@ fn get_auto_launch() -> Result<AutoLaunch, String> {
     AutoLaunchBuilder::new()
         .set_app_name("CrabProxy")
         .set_app_path(&exe_str)
+        .set_args(&["--silent"])
         .build()
         .map_err(|e| format!("创建开机自启管理器失败: {}", e))
 }

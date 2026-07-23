@@ -4,15 +4,60 @@ mod error;
 mod proxy;
 mod startup;
 
+use fs2::FileExt;
 use proxy::engine::create_shared_engine;
+use std::fs;
+use std::path::PathBuf;
 use tauri::Manager;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
+/// 获取实例锁文件路径
+fn get_lock_path() -> Result<PathBuf, String> {
+    let base = if cfg!(target_os = "windows") {
+        let appdata = std::env::var("APPDATA")
+            .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_default());
+        PathBuf::from(appdata)
+    } else {
+        let home = std::env::var("HOME").unwrap_or_default();
+        PathBuf::from(home)
+    };
+    Ok(base.join(".crabproxy.lock"))
+}
+
+/// 单实例检测：尝试获取文件锁，失败则说明已有实例在运行
+fn lock_instance() -> Result<fs::File, String> {
+    let lock_path = get_lock_path()?;
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(&lock_path)
+        .map_err(|e| format!("无法创建实例锁文件: {}", e))?;
+
+    // 尝试获取排他锁（非阻塞）
+    file.try_lock_exclusive()
+        .map_err(|_| "应用已在运行中，不能重复启动".to_string())?;
+
+    Ok(file)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // 检查单实例锁
+    let _lock = match lock_instance() {
+        Ok(lock) => lock,
+        Err(e) => {
+            eprintln!("{}", e);
+            return;
+        }
+    };
+
+    // 检查是否为静默启动（开机自启）
+    let is_silent = std::env::args().any(|a| a == "--silent");
+
     tauri::Builder::default()
-        .setup(|app| {
+        .setup(move |app| {
             // 开发模式下启用日志插件
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -30,14 +75,10 @@ pub fn run() {
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
-            // 构建系统托盘图标
-            // 使用应用默认图标（来自 bundle 配置），确保 Windows/macOS/Linux 托盘图标正常显示
             let tray_icon = app
                 .default_window_icon()
                 .cloned()
                 .unwrap_or_else(|| {
-                    // 回退：编译时嵌入 32x32 PNG → 原始 RGBA 像素
-                    // 此宏由 tauri-codegen 在编译时处理
                     panic!("应用图标未找到，请检查 tauri.conf.json 中 bundle.icon 配置")
                 });
 
@@ -59,7 +100,6 @@ pub fn run() {
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
-                    // 双击托盘图标显示窗口
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
@@ -74,24 +114,27 @@ pub fn run() {
                 })
                 .build(app)?;
 
+            // 静默启动：隐藏主窗口到托盘
+            if is_silent {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+
             Ok(())
         })
-        // 窗口关闭时隐藏到托盘而非退出
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                // 阻止关闭，隐藏到托盘
                 api.prevent_close();
                 let _ = window.hide();
             }
         })
         .invoke_handler(tauri::generate_handler![
-            // 配置命令
             commands::config_cmd::get_all_configs,
             commands::config_cmd::load_config,
             commands::config_cmd::save_config,
             commands::config_cmd::delete_config,
             commands::config_cmd::rename_config,
-            // 代理命令
             commands::proxy_cmd::switch_config,
             commands::proxy_cmd::toggle_all_ports,
             commands::proxy_cmd::update_port,
@@ -99,7 +142,6 @@ pub fn run() {
             commands::proxy_cmd::remove_port,
             commands::proxy_cmd::get_proxy_status,
             commands::proxy_cmd::restore_last_session,
-            // 系统命令
             commands::system_cmd::get_startup,
             commands::system_cmd::set_startup,
             commands::system_cmd::set_window_theme,
