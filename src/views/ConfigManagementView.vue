@@ -4,7 +4,8 @@ import { useProxyStore } from '../stores/proxyStore'
 import ConfigEditDialog from '../components/config/ConfigEditDialog.vue'
 import ConfirmDialog from '../components/common/ConfirmDialog.vue'
 import { useMessage } from 'naive-ui'
-import type { ConfigMeta } from '../types'
+import { invoke } from '@tauri-apps/api/core'
+import type { ConfigMeta, ProxyConfig } from '../types'
 
 const configStore = useConfigStore()
 const proxyStore = useProxyStore()
@@ -35,13 +36,16 @@ function openEditDialog(config: ConfigMeta) {
 async function handleSaveConfig(data: { name: string; global_ip: string }) {
   try {
     if (editingConfig.value) {
+      // 编辑时保留已有端口列表
+      const existing = await invoke<ProxyConfig>('load_config', { name: editingConfig.value.name })
       await configStore.saveConfig({
         name: editingConfig.value.name,
         global_ip: data.global_ip,
-        ports: [],
+        ports: existing.ports,
       })
       message.success('配置已更新')
     } else {
+      // 新建配置无端口
       await configStore.saveConfig({
         name: data.name,
         global_ip: data.global_ip,
