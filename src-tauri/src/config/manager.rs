@@ -194,7 +194,7 @@ mod tests {
             name: name.into(),
             global_ip: "192.168.1.1".into(),
             ports: vec![
-                PortRule { local_port: 8080, target_ip: None, target_port: None, enabled: true },
+                PortRule { name: None, local_port: 8080, target_ip: None, target_port: None, enabled: true },
             ],
         }
     }

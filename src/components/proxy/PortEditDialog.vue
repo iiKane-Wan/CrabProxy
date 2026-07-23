@@ -22,11 +22,13 @@ const isEditing = computed(() => props.editPort !== null)
 
 const formRef = ref()
 const formData = ref<{
+  name: string
   local_port: number | null
   target_ip: string
   target_port: number | null
   enabled: boolean
 }>({
+  name: '',
   local_port: null,
   target_ip: '',
   target_port: null,
@@ -39,6 +41,7 @@ watch(
   (port) => {
     if (port) {
       formData.value = {
+        name: port.name || '',
         local_port: port.local_port,
         target_ip: port.target_ip || '',
         target_port: port.target_port || null,
@@ -46,6 +49,7 @@ watch(
       }
     } else {
       formData.value = {
+        name: '',
         local_port: null,
         target_ip: '',
         target_port: null,
@@ -87,6 +91,7 @@ function handleSave() {
 
     const port: PortRule = {
       local_port: formData.value.local_port!,
+      name: formData.value.name.trim() || null,
       target_ip: formData.value.target_ip.trim() || null,
       target_port: formData.value.target_port || null,
       enabled: formData.value.enabled,
@@ -105,7 +110,7 @@ function handleCancel() {
 // 关闭后重置表单
 watch(visible, (val) => {
   if (!val) {
-    formData.value = { local_port: null, target_ip: '', target_port: null, enabled: true }
+    formData.value = { name: '', local_port: null, target_ip: '', target_port: null, enabled: true }
   }
 })
 </script>
@@ -119,6 +124,14 @@ watch(visible, (val) => {
     :mask-closable="false"
   >
     <n-form ref="formRef" :model="formData" :rules="rules" label-placement="left" label-width="90">
+      <n-form-item label="名称" path="name">
+        <n-input
+          v-model:value="formData.name"
+          placeholder="例如 MySQL-3306（可选）"
+          style="width: 100%"
+        />
+      </n-form-item>
+
       <n-form-item label="监听端口" path="local_port">
         <n-input-number
           v-model:value="formData.local_port"

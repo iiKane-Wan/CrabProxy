@@ -3,6 +3,7 @@
 /** 端口规则 */
 export interface PortRule {
   local_port: number
+  name?: string | null // 端口名称（可选）
   target_ip: string | null // null 表示使用全局 IP
   target_port: number | null // null 或 0 表示使用本地端口
   enabled: boolean
@@ -26,6 +27,7 @@ export interface ConfigMeta {
 /** 端口运行时状态 */
 export interface PortState {
   local_port: number
+  name?: string | null
   target_ip: string
   target_port: number
   enabled: boolean

@@ -123,7 +123,7 @@ async function handlePortToggle(port: { local_port: number }, enabled: boolean) 
 
           <n-space align="center" justify="space-between">
             <div>
-              <n-text strong>端口 {{ port.local_port }}</n-text>
+              <n-text strong>{{ port.name || `端口 ${port.local_port}` }}</n-text>
               <n-text depth="3" style="margin-left: 12px">
                 → {{ port.target_ip }}:{{ port.target_port }}
               </n-text>

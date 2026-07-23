@@ -39,6 +39,7 @@ impl ProxyEngine {
             .iter()
             .map(|p| PortState {
                 local_port: p.local_port,
+                name: p.name.clone(),
                 target_ip: config.resolve_target_ip(p),
                 target_port: config.resolve_target_port(p),
                 enabled: p.enabled,
@@ -159,6 +160,7 @@ impl ProxyEngine {
     pub async fn add_port(
         &mut self,
         local_port: u16,
+        name: Option<String>,
         target_ip: String,
         target_port: u16,
         enabled: bool,
@@ -172,6 +174,7 @@ impl ProxyEngine {
 
         self.port_states.push(PortState {
             local_port,
+            name,
             target_ip: target_ip.clone(),
             target_port,
             enabled,

@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PortState {
     pub local_port: u16,
+    /// 端口名称（可选）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     pub target_ip: String,
     pub target_port: u16,
     pub enabled: bool,

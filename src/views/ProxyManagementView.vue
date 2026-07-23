@@ -49,9 +49,10 @@ async function handleAddPort(port: PortRule) {
 }
 
 // 编辑端口
-function openEditDialog(port: { local_port: number; target_ip: string; target_port: number | null; enabled: boolean }) {
+function openEditDialog(port: { name?: string | null; local_port: number; target_ip: string; target_port: number | null; enabled: boolean }) {
   editingPort.value = {
     local_port: port.local_port,
+    name: port.name || null,
     target_ip: port.target_ip || null,
     target_port: port.target_port || null,
     enabled: port.enabled,
@@ -97,6 +98,7 @@ async function handlePortToggle(port: { local_port: number }, enabled: boolean) 
   try {
     await proxyStore.updatePort(configStore.currentConfig.name, {
       local_port: rule.local_port,
+      name: rule.name || null,
       target_ip: rule.target_ip || null,
       target_port: rule.target_port || null,
       enabled,
@@ -146,6 +148,9 @@ async function handlePortToggle(port: { local_port: number }, enabled: boolean) 
           <n-space align="center" justify="space-between" style="width: 100%">
             <n-space align="center">
               <n-tag type="info" size="small">{{ port.local_port }}</n-tag>
+              <n-text v-if="port.name" depth="3" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+                {{ port.name }}
+              </n-text>
               <n-text
                 >→ {{ port.target_ip || globalIp }}:{{ port.target_port || port.local_port }}</n-text
               >
@@ -157,7 +162,7 @@ async function handlePortToggle(port: { local_port: number }, enabled: boolean) 
                 size="small"
                 @update:value="(v: boolean) => handlePortToggle(port, v)"
               />
-              <n-button size="tiny" @click="openEditDialog({local_port: port.local_port, target_ip: port.target_ip || '', target_port: port.target_port || null, enabled: port.enabled})"
+              <n-button size="tiny" @click="openEditDialog({name: port.name, local_port: port.local_port, target_ip: port.target_ip || '', target_port: port.target_port || null, enabled: port.enabled})"
                 >编辑</n-button
               >
               <n-button size="tiny" type="error" @click="openDeleteConfirm(port)">

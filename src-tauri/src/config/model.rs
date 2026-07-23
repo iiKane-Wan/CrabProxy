@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 /// 端口代理规则
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PortRule {
+    /// 端口名称（可选，仅用于标识）
+    #[serde(default)]
+    pub name: Option<String>,
     /// 本地监听端口
     pub local_port: u16,
     /// 目标 IP（None 或空字符串时使用配置的 global_ip）
@@ -127,12 +130,14 @@ mod tests {
             global_ip: "192.168.1.1".into(),
             ports: vec![
                 PortRule {
+                    name: None,
                     local_port: 8080,
                     target_ip: None,
                     target_port: None,
                     enabled: true,
                 },
                 PortRule {
+                    name: None,
                     local_port: 3306,
                     target_ip: Some("10.0.0.1".into()),
                     target_port: Some(3307),
@@ -149,8 +154,8 @@ mod tests {
             name: "测试".into(),
             global_ip: "192.168.1.1".into(),
             ports: vec![
-                PortRule { local_port: 8080, target_ip: None, target_port: None, enabled: true },
-                PortRule { local_port: 8080, target_ip: None, target_port: None, enabled: true },
+                PortRule { name: None, local_port: 8080, target_ip: None, target_port: None, enabled: true },
+                PortRule { name: None, local_port: 8080, target_ip: None, target_port: None, enabled: true },
             ],
         };
         assert!(config.validate().is_err());
@@ -182,7 +187,7 @@ mod tests {
             name: "测试".into(),
             global_ip: "192.168.1.1".into(),
             ports: vec![
-                PortRule { local_port: 8080, target_ip: None, target_port: Some(0), enabled: true },
+                PortRule { name: None, local_port: 8080, target_ip: None, target_port: Some(0), enabled: true },
             ],
         };
         assert!(config.validate().is_err());
@@ -196,13 +201,13 @@ mod tests {
             ports: vec![],
         };
 
-        let port1 = PortRule { local_port: 80, target_ip: None, target_port: None, enabled: true };
+        let port1 = PortRule { name: None, local_port: 80, target_ip: None, target_port: None, enabled: true };
         assert_eq!(config.resolve_target_ip(&port1), "192.168.1.1");
 
-        let port2 = PortRule { local_port: 443, target_ip: Some("10.0.0.5".into()), target_port: None, enabled: true };
+        let port2 = PortRule { name: None, local_port: 443, target_ip: Some("10.0.0.5".into()), target_port: None, enabled: true };
         assert_eq!(config.resolve_target_ip(&port2), "10.0.0.5");
 
-        let port3 = PortRule { local_port: 22, target_ip: Some("".into()), target_port: None, enabled: true };
+        let port3 = PortRule { name: None, local_port: 22, target_ip: Some("".into()), target_port: None, enabled: true };
         assert_eq!(config.resolve_target_ip(&port3), "192.168.1.1");
     }
 
@@ -215,15 +220,15 @@ mod tests {
         };
 
         // 未指定 → 回退到 local_port
-        let p1 = PortRule { local_port: 8080, target_ip: None, target_port: None, enabled: true };
+        let p1 = PortRule { name: None, local_port: 8080, target_ip: None, target_port: None, enabled: true };
         assert_eq!(config.resolve_target_port(&p1), 8080);
 
         // 指定 0 → 回退到 local_port
-        let p2 = PortRule { local_port: 8080, target_ip: None, target_port: Some(0), enabled: true };
+        let p2 = PortRule { name: None, local_port: 8080, target_ip: None, target_port: Some(0), enabled: true };
         assert_eq!(config.resolve_target_port(&p2), 8080);
 
         // 指定 9090 → 使用指定值
-        let p3 = PortRule { local_port: 8080, target_ip: None, target_port: Some(9090), enabled: true };
+        let p3 = PortRule { name: None, local_port: 8080, target_ip: None, target_port: Some(9090), enabled: true };
         assert_eq!(config.resolve_target_port(&p3), 9090);
     }
 

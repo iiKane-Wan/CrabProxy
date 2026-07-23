@@ -74,6 +74,7 @@ pub async fn update_port(
         .find(|p| p.local_port == port.local_port)
         .ok_or_else(|| format!("端口 {} 不存在", port.local_port))?;
 
+    existing.name = port.name.clone();
     existing.target_ip = port.target_ip;
     existing.target_port = port.target_port;
     existing.enabled = port.enabled;
@@ -108,15 +109,17 @@ pub async fn add_port(
 
     let target_ip = config.resolve_target_ip(&port);
     let target_port = config.resolve_target_port(&port);
+    let port_name = port.name.clone();
+    let port_local = port.local_port;
+    let port_enabled = port.enabled;
     config.ports.push(port);
 
     manager::save_config(&config).map_err(|e| e.to_string())?;
 
     // 动态添加代理
-    let last = config.ports.last().unwrap();
     let mut engine = engine.lock().await;
     engine
-        .add_port(last.local_port, target_ip, target_port, last.enabled, &app_handle)
+        .add_port(port_local, port_name, target_ip, target_port, port_enabled, &app_handle)
         .await?;
 
     log::info!("端口已添加: config={}, port={}", config_name, config.ports.last().unwrap().local_port);
