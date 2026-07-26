@@ -114,10 +114,12 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // 静默启动：隐藏主窗口到托盘
-            if is_silent {
+            // 窗口默认不可见（tauri.conf.json visible: false）
+            // 非静默模式：显示窗口；静默模式（开机自启）：保持隐藏，零闪烁
+            if !is_silent {
                 if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.hide();
+                    let _ = window.show();
+                    let _ = window.set_focus();
                 }
             }
 
